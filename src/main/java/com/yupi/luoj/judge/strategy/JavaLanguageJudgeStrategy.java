@@ -10,9 +10,10 @@ import com.yupi.luoj.model.enums.JudgeInfoMessageEnum;
 import java.util.List;
 
 /**
- *  默认判题策略
+ *  Java判题策略
+ *
  */
-public class DefaultJudgeStrategy implements JudgeStrategy {
+public class JavaLanguageJudgeStrategy implements JudgeStrategy {
     @Override
     public JudgeInfo doJudge(JudgeContext judgeContext) {
         JudgeInfo judgeInfo = judgeContext.getJudgeInfo();
@@ -48,7 +49,8 @@ public class DefaultJudgeStrategy implements JudgeStrategy {
             judgeInfoResponse.setMessage(judgeInfoMessageEnum.getValue());
             return judgeInfoResponse;
         }
-        if (time > needTimeLimit) {
+        long JAVA_PROGRAM_TIME_COST = 10000L;
+        if (time - JAVA_PROGRAM_TIME_COST  > needTimeLimit) {
             judgeInfoMessageEnum = JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED;
             judgeInfoResponse.setMessage(judgeInfoMessageEnum.getValue());
             return judgeInfoResponse;

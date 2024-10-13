@@ -1,5 +1,6 @@
 package com.yupi.luoj.judge.codesandbox.model;
 
+import com.yupi.luoj.model.dto.questionsubmit.JudgeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,13 +12,24 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExecuteCodeReponse {
+public class ExecuteCodeResponse {
 
-    private List<String> inputList;
+    private List<String> outputList;
 
-    private String code;
+    /**
+     *  接口返回信息
+     */
+    private String message;
 
-    private String language;
+    /**
+     *  执行状态
+     */
+    private Integer status;
+
+    /**
+     *  判题信息
+     */
+    private JudgeInfo judgeInfo;
 
 
 }

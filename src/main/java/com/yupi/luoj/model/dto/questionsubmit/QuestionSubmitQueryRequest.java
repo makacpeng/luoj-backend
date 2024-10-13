@@ -1,21 +1,20 @@
 package com.yupi.luoj.model.dto.questionsubmit;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.yupi.luoj.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
 
 /**
- * 创建请求
+ * 查询请求
  *
  * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 @Data
-public class QuestionSubmitAddRequest implements Serializable {
+@EqualsAndHashCode(callSuper = true)
+public class QuestionSubmitQueryRequest extends PageRequest implements Serializable {
 
     /**
      * 编程语言
@@ -23,14 +22,19 @@ public class QuestionSubmitAddRequest implements Serializable {
     private String language;
 
     /**
-     * 用户代码
+     * 提交状态
      */
-    private String code;
+    private Integer status;
 
     /**
-     * 题目 id
+     * 题目id
      */
     private Long questionId;
+
+    /**
+     * 用户id
+     */
+    private Long userId;
 
     private static final long serialVersionUID = 1L;
 }

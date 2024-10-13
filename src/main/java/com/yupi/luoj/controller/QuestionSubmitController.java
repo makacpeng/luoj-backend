@@ -1,11 +1,19 @@
 package com.yupi.luoj.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yupi.luoj.common.BaseResponse;
 import com.yupi.luoj.common.ErrorCode;
 import com.yupi.luoj.common.ResultUtils;
 import com.yupi.luoj.exception.BusinessException;
+import com.yupi.luoj.model.dto.question.QuestionQueryRequest;
 import com.yupi.luoj.model.dto.questionsubmit.QuestionSubmitAddRequest;
+import com.yupi.luoj.model.dto.questionsubmit.QuestionSubmitQueryRequest;
+import com.yupi.luoj.model.entity.Question;
+import com.yupi.luoj.model.entity.QuestionSubmit;
 import com.yupi.luoj.model.entity.User;
+import com.yupi.luoj.model.vo.QuestionSubmitVO;
+import com.yupi.luoj.service.PostService;
+import com.yupi.luoj.service.QuestionService;
 import com.yupi.luoj.service.QuestionSubmitService;
 import com.yupi.luoj.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +42,9 @@ public class QuestionSubmitController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private QuestionService questionService;
+
     /**
      * 提交题目
      *
@@ -52,6 +63,26 @@ public class QuestionSubmitController {
         long questionId = questionSubmitAddRequest.getQuestionId();
         long questionSubmitId = questionSubmitService.doQuestionSubmit(questionSubmitAddRequest, loginUser);
         return ResultUtils.success(questionSubmitId);
+    }
+
+    /**
+     * 分页获取题目提交列表（仅管理员和提交用户）
+     *
+     * @param questionSubmitQueryRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/list/page")
+    public BaseResponse<Page<QuestionSubmitVO>> listQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest  ,
+                                                                         HttpServletRequest request) {
+        long current = questionSubmitQueryRequest.getCurrent();
+        long size = questionSubmitQueryRequest.getPageSize();
+        //从数据库中查询原始的题目提交分页信息
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitService.page(new Page<>(current, size),
+                questionSubmitService.getQueryWrapper(questionSubmitQueryRequest));
+        final User loginUser = userService.getLoginUser(request);
+        //返回脱敏信息
+        return ResultUtils.success(questionSubmitService.getQuestionSubmitVOPage(questionSubmitPage, loginUser));
     }
 
 }

@@ -10,10 +10,7 @@ import com.yupi.luoj.common.ResultUtils;
 import com.yupi.luoj.constant.UserConstant;
 import com.yupi.luoj.exception.BusinessException;
 import com.yupi.luoj.exception.ThrowUtils;
-import com.yupi.luoj.model.dto.question.QuestionAddRequest;
-import com.yupi.luoj.model.dto.question.QuestionEditRequest;
-import com.yupi.luoj.model.dto.question.QuestionQueryRequest;
-import com.yupi.luoj.model.dto.question.QuestionUpdateRequest;
+import com.yupi.luoj.model.dto.question.*;
 import com.yupi.luoj.model.entity.Question;
 import com.yupi.luoj.model.entity.User;
 import com.yupi.luoj.model.vo.QuestionVO;
@@ -26,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * 题目接口
@@ -63,6 +61,14 @@ public class QuestionController {
         List<String> tags = questionAddRequest.getTags();
         if (tags != null) {
             question.setTags(JSONUtil.toJsonStr(tags));
+        }
+        List<JudgeCase> judgeCase = questionAddRequest.getJudgeCase();
+        if (judgeCase != null) {
+            question.setJudgeCase(JSONUtil.toJsonStr(judgeCase));
+        }
+        JudgeConfig judgeConfig = questionAddRequest.getJudgeConfig();
+        if (judgeConfig != null) {
+            question.setJudgeConfig(JSONUtil.toJsonStr(judgeConfig));
         }
         questionService.validQuestion(question, true);
         User loginUser = userService.getLoginUser(request);
@@ -118,6 +124,14 @@ public class QuestionController {
         if (tags != null) {
             question.setTags(JSONUtil.toJsonStr(tags));
         }
+        List<JudgeCase> judgeCase = questionUpdateRequest.getJudgeCase();
+        if (judgeCase != null) {
+            question.setJudgeCase(JSONUtil.toJsonStr(judgeCase));
+        }
+        JudgeConfig judgeConfig = questionUpdateRequest.getJudgeConfig();
+        if (judgeConfig != null) {
+            question.setJudgeConfig(JSONUtil.toJsonStr(judgeConfig));
+        }
         // 参数校验
         questionService.validQuestion(question, false);
         long id = questionUpdateRequest.getId();
@@ -130,6 +144,28 @@ public class QuestionController {
 
     /**
      * 根据 id 获取
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/get")
+    public BaseResponse<Question> getQuestionById(long id, HttpServletRequest request) {
+        if (id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Question question = questionService.getById(id);
+        if (question == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        if (!question.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        return ResultUtils.success(question);
+    }
+
+    /**
+     * 根据 id 获取(脱敏)
      *
      * @param id
      * @return
@@ -205,8 +241,26 @@ public class QuestionController {
         return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
     }
 
+//    /**
+//     * 分页获取题目列表（仅管理员）
+//     *
+//     * @param questionQueryRequest
+//     * @param request
+//     * @return
+//     */
+//    @PostMapping("/list/page")
+//    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+//    public BaseResponse<Page<Question>> listQuestionByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
+//                                                             HttpServletRequest request) {
+//        long current = questionQueryRequest.getCurrent();
+//        long size = questionQueryRequest.getPageSize();
+//        Page<Question> questionPage = questionService.page(new Page<>(current, size),
+//                questionService.getQueryWrapper(questionQueryRequest));
+//        return ResultUtils.success(questionPage);
+//    }
+
     /**
-     * 编辑（用户）
+     * 编辑（ 用户）
      *
      * @param questionEditRequest
      * @param request
@@ -222,6 +276,14 @@ public class QuestionController {
         List<String> tags = questionEditRequest.getTags();
         if (tags != null) {
             question.setTags(JSONUtil.toJsonStr(tags));
+        }
+        List<JudgeCase> judgeCase = questionEditRequest.getJudgeCase();
+        if (judgeCase != null) {
+            question.setJudgeCase(JSONUtil.toJsonStr(judgeCase));
+        }
+        JudgeConfig judgeConfig = questionEditRequest.getJudgeConfig();
+        if (judgeConfig != null) {
+            question.setJudgeConfig(JSONUtil.toJsonStr(judgeConfig));
         }
         // 参数校验
         questionService.validQuestion(question, false);

@@ -1,34 +1,62 @@
 package com.yupi.luoj.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yupi.luoj.common.ErrorCode;
+import com.yupi.luoj.constant.CommonConstant;
 import com.yupi.luoj.exception.BusinessException;
+import com.yupi.luoj.judge.JudgeService;
+import com.yupi.luoj.model.dto.question.QuestionQueryRequest;
 import com.yupi.luoj.model.dto.questionsubmit.QuestionSubmitAddRequest;
+import com.yupi.luoj.model.dto.questionsubmit.QuestionSubmitQueryRequest;
 import com.yupi.luoj.model.entity.*;
 import com.yupi.luoj.model.entity.QuestionSubmit;
 import com.yupi.luoj.model.enums.QuestionSubmitLanguageEnum;
 import com.yupi.luoj.model.enums.QuestionSubmitStatusEnum;
+import com.yupi.luoj.model.vo.QuestionSubmitVO;
+import com.yupi.luoj.model.vo.QuestionVO;
+import com.yupi.luoj.model.vo.UserVO;
 import com.yupi.luoj.service.QuestionService;
 import com.yupi.luoj.service.QuestionSubmitService;
 import com.yupi.luoj.service.QuestionSubmitService;
 import com.yupi.luoj.mapper.QuestionSubmitMapper;
+import com.yupi.luoj.service.UserService;
+import com.yupi.luoj.utils.SqlUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
-* @author chendepeng
-* @description 针对表【question_submit(题目提交)】的数据库操作Service实现
-* @createDate 2024-10-03 01:19:31
-*/
+ * @author chendepeng
+ * @description 针对表【question_submit(题目提交)】的数据库操作Service实现
+ * @createDate 2024-10-03 01:19:31
+ */
 @Service
 public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper, QuestionSubmit>
-    implements QuestionSubmitService{
+        implements QuestionSubmitService {
     @Resource
     private QuestionService questionService;
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    @Lazy
+    private JudgeService judgeService;
 
     /**
      * 提交题目
@@ -66,7 +94,12 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         if (!save) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据插入失败");
         }
-        return questionSubmit.getId();
+        Long questionSubmitId = questionSubmit.getId();
+        // 执行判题操作
+        CompletableFuture.runAsync(() -> {
+            judgeService.doJudge(questionSubmitId);
+        });
+        return questionSubmitId;
 //        // 锁必须要包裹住事务方法
 //        QuestionSubmitService questionSubmitService = (QuestionSubmitService) AopContext.currentProxy();
 //        synchronized (String.valueOf(userId).intern()) {
@@ -119,6 +152,64 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 //            }
 //        }
 //    }
+
+    /**
+     * 获取查询包装类
+     *
+     * @param questionSubmitQueryRequest
+     * @return
+     */
+    @Override
+    public QueryWrapper<QuestionSubmit> getQueryWrapper(QuestionSubmitQueryRequest questionSubmitQueryRequest) {
+        QueryWrapper<QuestionSubmit> queryWrapper = new QueryWrapper<>();
+        if (questionSubmitQueryRequest == null) {
+            return queryWrapper;
+        }
+
+        String language = questionSubmitQueryRequest.getLanguage();
+        Integer status = questionSubmitQueryRequest.getStatus();
+        Long questionId = questionSubmitQueryRequest.getQuestionId();
+        Long userId = questionSubmitQueryRequest.getUserId();
+        String sortField = questionSubmitQueryRequest.getSortField();
+        String sortOrder = questionSubmitQueryRequest.getSortOrder();
+
+
+        // 拼接查询条件
+        queryWrapper.eq(StringUtils.isNotBlank(language), "language", language);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(questionId), "questionId", questionId);
+        queryWrapper.eq(QuestionSubmitStatusEnum.getEnumByValue(status) != null, "status", status);
+        queryWrapper.eq("isDelete", false);
+        queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
+                sortField);
+        return queryWrapper;
+    }
+
+    @Override
+    public QuestionSubmitVO getQuestionSubmitVO(QuestionSubmit questionSubmit, User loginUser) {
+        QuestionSubmitVO questionSubmitVO = QuestionSubmitVO.objToVo(questionSubmit);
+        // 脱敏
+        long userId = loginUser.getId();
+        System.out.println(userId);
+        if (userId != questionSubmit.getUserId() && userService.isAdmin(loginUser)) {
+            questionSubmitVO.setCode(null);
+        }
+        return questionSubmitVO;
+    }
+
+    @Override
+    public Page<QuestionSubmitVO> getQuestionSubmitVOPage(Page<QuestionSubmit> questionSubmitPage, User loginUser) {
+        List<QuestionSubmit> questionSubmitList = questionSubmitPage.getRecords();
+        Page<QuestionSubmitVO> questionSubmitVOPage = new Page<>(questionSubmitPage.getCurrent(), questionSubmitPage.getSize(), questionSubmitPage.getTotal());
+        if (CollUtil.isEmpty(questionSubmitList)) {
+            return questionSubmitVOPage;
+        }
+        List<QuestionSubmitVO> questionSubmitVOList = questionSubmitList.stream()
+                .map(questionSubmit -> getQuestionSubmitVO(questionSubmit, loginUser))
+                .collect(Collectors.toList());
+        questionSubmitVOPage.setRecords(questionSubmitVOList);
+        return questionSubmitVOPage;
+    }
 }
 
 
