@@ -3,16 +3,13 @@ package com.yupi.luoj.model.vo;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.yupi.luoj.model.dto.question.JudgeConfig;
-import com.yupi.luoj.model.dto.questionsubmit.JudgeInfo;
-import com.yupi.luoj.model.entity.Question;
+import com.yupi.luoj.judge.codesandbox.model.JudgeInfo;
 import com.yupi.luoj.model.entity.QuestionSubmit;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 
 /**
  * 题目提交封装类
