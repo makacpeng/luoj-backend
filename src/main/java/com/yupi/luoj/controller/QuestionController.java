@@ -31,12 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Vector;
 
-/**
- * 题目接口
- *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
- */
 @RestController
 @RequestMapping("/question")
 @Slf4j
